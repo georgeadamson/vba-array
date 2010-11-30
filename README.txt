@@ -1,6 +1,8 @@
-A better array for VBA and VBS.
+(All relevant code is in the VBA-Array.doc file as macros. Other files can be ignored)
 
-Provides an array-like Class with methods that you'd expect in other languages:
+A better array for VBA/VBS, plus a jQuery-like element selector:
+
+ vbaArray provides an array-like Class with methods that you'd expect in other languages:
 
  - First
  - Last
