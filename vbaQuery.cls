@@ -10,17 +10,20 @@ Attribute VB_Exposed = True
 Option Base 0
 Option Explicit
 
+'vbaQuery is an experiment to bring jQuery-like element selection to vba.
+'
+'TODO:
+' - More than just a 'find' method!
+' - Enable chaining.
+' - Find a way to prevent dupe elements.
+
 Private stack As New VBAArray
 
-Private Sub Class_Initialize()
+Public Property Get find(selector As String, Optional context As Variant) As Variant
 
-End Sub
-
-
-Public Property Get find(selector As String, Optional context As Variant)
-
+    'Attempt to make this the default method:
+    'See http://webcache.googleusercontent.com/search?q=cache:eKM4kE0OyicJ:www.cpearson.com/excel/DefaultProperty.htm+vba+default+method&cd=1&hl=en&ct=clnk&client=firefox-a
     'Attribute find.VB_UserMemId = 0
-    Attribute find.VB_UserMemId = 0
 
     Dim contexts As VBAArray
     Dim matches As New VBAArray
@@ -198,3 +201,6 @@ Private Function isSomething(value As Variant)
 
 End Function
 
+Private Sub Class_Initialize()
+
+End Sub

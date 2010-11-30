@@ -12,8 +12,12 @@ Option Explicit
 
 'This class provides a zero-based array-like object with methods for use in VBA.
 '
+'TODO:
+'Enable enumeration of this vbaArray object
+
+
 'Properties:
-' - Length
+' - Count
 ' - Values
 '
 'Methods:
@@ -29,6 +33,11 @@ Option Explicit
 Private m_items() As Variant
 
 'Return a native array of all the items:
+Public Property Get Item(index) As Variant
+    AssignValue Item, m_items(index)
+End Property
+
+'Return a native array of all the items:
 Public Property Get Items() As Variant
     Items = m_items
 End Property
@@ -42,47 +51,49 @@ Public Property Let Items(value As Variant)
 End Property
 
 'Return the UBound of the array:
-Public Property Get Length() As Integer
+Public Property Get Count() As Long
 
-    Length = 0
+    Count = 0
     On Error Resume Next
-    Length = UBound(m_items) + 1
+    Count = UBound(m_items) + 1
 
 End Property
 
-'Count is just an alias for Length:
-Public Property Get Count() As Integer
+'Length is just an alias for Count:
+Public Property Get Length() As Long
     
-    Count = Me.Length
+    Length = Me.Count
 
 End Property
 
 'Return the array's first item:
 Public Function First() As Variant
     
-    If Me.Length > 0 Then AssignValue First, m_items(0) Else First = Null
+    If Me.Count > 0 Then AssignValue First, m_items(0) Else First = Null
 
 End Function
 
 'Return the array's last item:
 Public Function Last() As Variant
     
-    If Me.Length > 0 Then AssignValue Last, m_items(Me.LastIndex) Else Last = Null
+    If Me.Count > 0 Then AssignValue Last, m_items(Me.LastIndex) Else Last = Null
 
 End Function
 
 'Return the index of the array's last item: (Or -1 when array is empty)
-Public Function LastIndex() As Integer
+Public Function LastIndex() As Long
     
-    LastIndex = Me.Length - 1
+    LastIndex = Me.Count - 1
 
 End Function
 
 'Append the array with a new value:
 Public Function Push(value As Variant) As Variant
 
-    ReDim Preserve m_items(Me.Length) As Variant
-    AssignValue m_items(Me.Length - 1), value
+    Dim i As Long: i = Me.Count
+    ReDim Preserve m_items(i) As Variant
+
+    AssignValue m_items(i), value
     AssignValue Push, Me
     
 End Function
@@ -91,7 +102,7 @@ End Function
 Public Function Pop() As Variant
 
     AssignValue Pop, Me.Last
-    If Me.Length > 1 Then
+    If Me.Count > 1 Then
         ReDim Preserve m_items(Me.LastIndex - 1) As Variant
     Else
         Erase m_items
@@ -102,8 +113,8 @@ End Function
 'Prepend the array with a new value:
 Public Function Unshift(value As Variant) As Variant
 
-    Dim i As Integer
-    ReDim Preserve m_items(Me.Length) As Variant
+    Dim i As Long
+    ReDim Preserve m_items(Me.Count) As Variant
     For i = Me.LastIndex To 1 Step -1
         AssignValue m_items(i), m_items(i - 1)
     Next
@@ -115,9 +126,9 @@ End Function
 'Remove and return the first item from the array:
 Public Function Shift() As Variant
 
-    Dim i As Integer
+    Dim i As Long
     AssignValue Shift, Me.First
-    If Me.Length > 1 Then
+    If Me.Count > 1 Then
         For i = 0 To Me.LastIndex - 1
             AssignValue m_items(i), m_items(i + 1)
         Next
@@ -131,10 +142,10 @@ End Function
 'Append our array object with the new values:
 Public Function Merge(newArray As Variant) As VBAArray
 
-    Dim item As Variant
+    Dim Item As Variant
     
-    For Each item In makeVariantArray(newArray)
-        Me.Push item
+    For Each Item In makeArray(newArray)
+        Me.Push Item
     Next
     
     Set Merge = Me
@@ -151,13 +162,13 @@ End Function
 'Return a string created by joining all the array values:
 Public Function Join(Optional delimiter = " ") As String
 
-    Dim i As Integer
-    Dim item As Variant
+    Dim i As Long
+    Dim Item As Variant
     Dim tmpArray() As String
     ReDim tmpArray(Me.LastIndex) As String
 
-    For Each item In m_items
-        tmpArray(i) = ItemToString(item, delimiter)
+    For Each Item In m_items
+        tmpArray(i) = ItemToString(Item, delimiter)
         i = i + 1
     Next
 
@@ -182,8 +193,8 @@ End Function
 
 
 
-'Helper for converting an array or value to a native VB array:
-Private Function makeVariantArray(value As Variant) As Variant
+'Helper for converting an array or value to a native VB variant array:
+Private Function makeArray(value As Variant) As Variant
 
     Dim tmpArray() As Variant
 
@@ -191,29 +202,29 @@ Private Function makeVariantArray(value As Variant) As Variant
 
         'Return value as-is if it is already a Variant array: (VarType 8204)
         If VarType(value) = VarType(m_items) Then
-            makeVariantArray = value
+            makeArray = value
         Else
             Dim i As Long
-            Dim item As Variant
+            Dim Item As Variant
             ReDim tmpArray(UBound(value)) As Variant
-            For Each item In value
-                tmpArray(i) = item
+            For Each Item In value
+                tmpArray(i) = Item
                 i = i + 1
             Next
-            makeVariantArray = tmpArray
+            makeArray = tmpArray
         End If
 
     ElseIf IsVbaArray(value) Then
         
         'Return the vbaArray items array as-is:
-        makeVariantArray = value.Items
+        makeArray = value.Items
         
     Else
     
         'Copy value into a new 1-item array:
         ReDim tmpArray(0) As Variant
         AssignValue tmpArray(0), value
-        makeVariantArray = tmpArray
+        makeArray = tmpArray
 
     End If
 
@@ -222,29 +233,29 @@ End Function
 'Helper for detecting whether arg is one of our custom array objects:
 Private Function IsVbaArray(value As Variant) As Boolean
     
-    IsVbaArray = (TypeName(value) = "vbaArray")
+    IsVbaArray = (LCase(TypeName(value)) = "vbaarray")
 
 End Function
 
 'Helper to return a string representation of just about anything!
-Private Function ItemToString(item, Optional delimiter = " ") As String
+Private Function ItemToString(Item, Optional delimiter = " ") As String
 
-    If IsMissing(item) Then
+    If IsMissing(Item) Then
         ItemToString = "[Missing]"
-    ElseIf IsObject(item) Then
-        If item Is Nothing Then
+    ElseIf IsObject(Item) Then
+        If Item Is Nothing Then
             ItemToString = "[Nothing]"
-        ElseIf Len(TypeName(item)) > 0 Then
-            ItemToString = "[" & TypeName(item) & "]"
+        ElseIf Len(TypeName(Item)) > 0 Then
+            ItemToString = "[" & TypeName(Item) & "]"
         Else
             ItemToString = "[Object]"
         End If
-    ElseIf IsNull(item) Then
+    ElseIf IsNull(Item) Then
         ItemToString = "[Null]"
-    ElseIf IsArray(item) Then
-        ItemToString = VBA.Join(item, delimiter)
+    ElseIf IsArray(Item) Then
+        ItemToString = VBA.Join(Item, delimiter)
     Else
-        ItemToString = item
+        ItemToString = Item
     End If
     
 End Function
@@ -262,7 +273,7 @@ End Sub
 
 Public Property Get NewEnum() As IUnknown
 Attribute NewEnum.VB_UserMemId = -4
-   Set NewEnum = m_items.[_NewEnum]
+   'Set NewEnum = m_items.[_NewEnum]
 End Property
 
 Private Sub Class_Initialize()
